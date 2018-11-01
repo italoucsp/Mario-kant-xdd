@@ -33,20 +33,12 @@ public:
 
 };
 
-class Objects{
-public:
-    int posx=90,posy=230;
-    void Draw(char *ruta,sf::RenderWindow &app){
-        sf::Texture texture;
-        texture.loadFromFile(ruta);
-        sf::Sprite sprite;
-        sprite.setTexture(texture);
-        sprite.setPosition(posx, posy);
-        if(posy>200 && posy<250)sprite.setScale(2.5,2.5);
-        if(posy>=250)sprite.setScale(5.5,5.5);
-        app.draw(sprite);
-    }
-};
+void DrawObj(sf::RenderWindow &app,sf::Texture &texture,int posx,int posy){
+    sf::Sprite sprite;
+    sprite.setTexture(texture);
+    sprite.setPosition(posx, posy);
+    app.draw(sprite);
+}
 void draw_race(sf::RenderWindow &w,  sf::Color c, int x1, int y1, int wid1, int x2, int y2, int wid2)
 {
     sf::ConvexShape shape(4);
@@ -60,39 +52,34 @@ void draw_race(sf::RenderWindow &w,  sf::Color c, int x1, int y1, int wid1, int 
 
 class Game{
 public:
-        int pos = 0,FPS = 70;
+        int pos = 0,FPS = 100;
         int posx = 0;
         int aceleracion = 0;
         int freno = 1;
         int cont = -1;
 
+        sf::Texture arbol;
+
     int posxmove(vector<ejeH> lines){
-        if(pos!=0 && aceleracion!=0){
+        if(aceleracion!=0){
             cont ++;
-            if(lines[cont].curve > 0.0)return -10;
-            if(lines[cont].curve < 0.0)return 10;
+            if(lines[cont].curve > 0.0)return -13;
+            if(lines[cont].curve < 0.0)return 13;
             return 0;
         }
     }
     void Controls(sf::RenderWindow &app){
         if(sf::Keyboard::isKeyPressed(sf::Keyboard::Escape)) app.close();
         if(sf::Keyboard::isKeyPressed(sf::Keyboard::Down)) aceleracion-=freno;
-        if(sf::Keyboard::isKeyPressed(sf::Keyboard::Right)) posx+=22;
-        if(sf::Keyboard::isKeyPressed(sf::Keyboard::Left)) posx -= 22;
+        if(sf::Keyboard::isKeyPressed(sf::Keyboard::Right)) {if(aceleracion!=0)posx+=22;}
+        if(sf::Keyboard::isKeyPressed(sf::Keyboard::Left)) {if(aceleracion!=0)posx-=22;}
         if(sf::Keyboard::isKeyPressed(sf::Keyboard::Up)) aceleracion = 200;
     }
 
-    void Run(sf::RenderWindow &app,int N,vector<ejeH> lines){
+    void Run(sf::RenderWindow &app,int N,vector<ejeH> lines,vector<ejeH> clips){
 
-        //Grupo de objetos que iran apareciendo
-        /*vector<Objects> objetos;
-        for(int i=1;i<=7;i++){
-            Objects object;
-            object.posx += i*10;
-            object.posy += i*5;
-            objetos.push_back(object);
-        }
-        */
+        //Objetos que iran apareciendo
+        arbol.loadFromFile("Image/prueba.png");
 
         while(app.isOpen())
         {
@@ -117,8 +104,8 @@ public:
 
             for( int n = star_pos;n  < star_pos + 300; n++ )
             {
-                ejeH &l = lines[n%N];
-                l.cordenates_Scre(posx - x,1500,pos);
+                ejeH &l = lines[n%N], &cl =clips[n%N];
+                l.cordenates_Scre(posx - x,1500,pos); cl.cordenates_Scre(posx - x,1500,pos);
                 x+=dx;
                 dx+=l.curve;
 
@@ -129,13 +116,18 @@ public:
 
                 ejeH p = lines[(n - 1)% N];
 
-                draw_race(app, grass,0,p.y1,widthscreen,0, l.y1,widthscreen);
+                draw_race(app, grass,0,p.y1,widthscreen*2,0, l.y1,widthscreen);
                 draw_race(app, rumble, p.x1,p.y1,p.w*1.2,l.x1,l.y1,l.w*1.2);
                 draw_race(app, road,p.x1,p.y1 , p.w , l.x1,l.y1,l.w);
                 draw_race(app, lad,p.x1,p.y1 , p.w/18 , l.x1,l.y1,l.w/18);
 
+                //if(p.x1>posx && posx<p.x1+p.w*1.2)aceleracion = 100;
+
+                ejeH cli = clips[(n - 1)% N];
+
+                DrawObj(app,arbol,cli.x1,cl.y1);
+
             }
-            //for(int i=0;i<7;i++){objetos[i].Draw("Images/prueba.png",app);}
             app.display();
         }
     }
@@ -145,20 +137,23 @@ int main()
     sf::RenderWindow app(sf::VideoMode(widthscreen, heightscreen), "POOL POSITION");
 
     vector<ejeH> lines;
+    vector<ejeH> clips;
     for(int i = 0; i < 3200; i++)
     {
         ejeH line;
-        line.z = i * width_seg;
+        ejeH clip;
+        line.z = clip.z = i * width_seg;
 
         if(i > 500 && i < 700) line.curve = 1.5;
         if(i > 1000 && i < 1400) line.curve = -2.5;
         if(i>1600)line.curve = 0.7;
 
-
+        clips.push_back(clip);
         lines.push_back(line);
     }
     int N = lines.size();
     Game Poly;
-    Poly.Run(app,N,lines);
+    Poly.Run(app,N,lines,clips);
     return 0;
 }
+
