@@ -79,7 +79,7 @@ public:
     void Run(sf::RenderWindow &app,int N,vector<ejeH> lines,vector<ejeH> clips){
 
         //Objetos que iran apareciendo
-        arbol.loadFromFile("Image/prueba.png");
+        arbol.loadFromFile("Images/prueba.png");
 
         while(app.isOpen())
         {
